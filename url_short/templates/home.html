@@ -11,9 +11,25 @@
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header, footer {
+            background-color: #353535; /* Skyblue color */
+            color: #fff;
+            text-align: center;
+            font-size: 16px;
+            padding: 10px 0;
+        }
+
+        header {
+            border-bottom: 3px solid #28a745;
+        }
+
+        footer {
+            border-top: 3px solid #28a745;
+            margin-top: auto;
         }
 
         .container {
@@ -21,13 +37,23 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 400px;
+            width: 100%;
+            max-width: 400px;
+            margin: 150px auto;
             text-align: center;
+            justify-content: center;
+            align-items: center;
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 20px;
+            color: #909090;
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold; /* Improved font weight */
+        }
+
+        p {
+            margin: 5px 0; /* Reduced margin for better spacing */
         }
 
         form {
@@ -41,6 +67,7 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
+            width: 100%;
         }
 
         button {
@@ -52,6 +79,7 @@
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            width: 100%;
         }
 
         button:hover {
@@ -67,32 +95,100 @@
             font-weight: bold;
             word-break: break-all;
         }
+
+        .short-url a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .short-url a:hover {
+            text-decoration: underline;
+        }
+
+        .links {
+            font-size: 14px;
+        }
+
+        .links a {
+            color: #28a745;
+            text-decoration: none;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
+    <header>
+        <h1>Welcome to URL Shortener</h1>
+        <p>by Sarthak</p>
+    </header>
+
     <div class="container">
-        <h1>URL Shortener</h1>
         <form id="url-form">
             <input type="url" id="url-input" placeholder="Enter your URL here" required>
             <button type="submit">Shorten URL</button>
         </form>
-
         <div class="result" id="result" style="display: none;">
             <p>Your shortened URL:</p>
-            <p class="short-url" id="short-url"></p>
+            <p class="short-url">
+                <a id="short-url" href="#" target="_blank"></a>
+            </p>
         </div>
     </div>
 
+    <footer>
+        <div class="links">
+            <p>Check out the code here: <a href="https://github.com/Sarthak5598/URL-Shortener" target="_blank">GitHub Repository</a></p>
+            <p>Reach out to me on LinkedIn: <a href="https://www.linkedin.com/in/sarthak-sharma-b848b0228/" target="_blank">LinkedIn Profile</a></p>
+        </div>
+    </footer>
+
     <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
         document.getElementById('url-form').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const urlInput = document.getElementById('url-input').value;
-            const shortUrl = "https://short.url/" + Math.random().toString(36).substring(7);  // Simulated short URL generation
 
-            document.getElementById('short-url').textContent = shortUrl;
-            document.getElementById('result').style.display = 'block';
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ original_url: urlInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.short_url) {
+                    const shortUrlElement = document.getElementById('short-url');
+                    shortUrlElement.textContent = data.short_url;
+                    shortUrlElement.href = data.short_url;
+                    document.getElementById('result').style.display = 'block';
+                } else {
+                    console.error('Error:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         });
     </script>
 
