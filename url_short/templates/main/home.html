@@ -24,9 +24,70 @@
         }
 
         header {
+            background-color: #353535;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 20px;
+            font-size: 16px;
             border-bottom: 3px solid #28a745;
         }
 
+        header h1, header p {
+            margin: 0;
+            display: inline-block;
+            color: #fff;
+            text-align: left;
+        }
+
+        header .left-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        header .right-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        header .right-section span {
+            color: #fff;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        header .right-section span a {
+            color: #28a745;
+            text-decoration: none;
+            margin-right: 10px;
+            background-color: #fff;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        header .right-section span a:hover {
+            background-color: #218838;
+            color: #fff;
+        }
+
+        header .right-section .hey-user {
+            color: #28a745;
+            font-weight: bold;
+            background-color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        header .right-section .hey-user:hover {
+            background-color: #218838;
+            color: #fff;
+        }
         footer {
             border-top: 3px solid #28a745;
             margin-top: auto;
@@ -117,17 +178,41 @@
         .links a:hover {
             text-decoration: underline;
         }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+        }
+
+        .message.success {
+            background-color: #4CAF50;
+        }
+
+        .message.error {
+            background-color: #f44336;
+        }
     </style>
 </head>
 <body>
-
     <header>
-        <h1>Welcome to URL Shortener</h1>
-        <p>by Sarthak</p>
+        <div class="left-section">
+            <h1>Welcome to URL Shortener</h1>
+            <p>by Sarthak</p>
+        </div>
+        <div class="right-section">
+            <span class="hey-user">Hey, {{ request.user }}</span>
+            <span><a href="{% url 'logout' %}">Logout</a></span>
+        </div>
     </header>
 
     <div class="container">
         <form id="url-form">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
             <input type="url" id="url-input" placeholder="Enter your URL here" required>
             <button type="submit">Shorten URL</button>
         </form>
@@ -145,8 +230,10 @@
             <p>Reach out to me on LinkedIn: <a href="https://www.linkedin.com/in/sarthak-sharma-b848b0228/" target="_blank">LinkedIn Profile</a></p>
         </div>
     </footer>
+    <div class="loader" id="loader"></div>
 
     <script>
+        // Function to retrieve CSRF token
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -162,10 +249,31 @@
             return cookieValue;
         }
 
+        // Function to validate URL format
+        function validateURL(url) {
+            const urlPattern = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+            return urlPattern.test(url);
+        }
+
         document.getElementById('url-form').addEventListener('submit', function(e) {
             e.preventDefault();
-
             const urlInput = document.getElementById('url-input').value;
+            const loader = document.getElementById('loader');
+            const resultElement = document.getElementById('result');
+            const shortUrlElement = document.getElementById('short-url');
+
+            // Clear previous results and hide result area
+            resultElement.style.display = 'none';
+            shortUrlElement.textContent = '';
+
+            // Check if the input URL is valid
+            if (!validateURL(urlInput)) {
+                alert('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+
+            // Show loader while fetching data
+            loader.style.display = 'block';
 
             fetch('/', {
                 method: 'POST',
@@ -177,20 +285,24 @@
             })
             .then(response => response.json())
             .then(data => {
+                loader.style.display = 'none'; // Hide loader after response
+
                 if (data.short_url) {
-                    const shortUrlElement = document.getElementById('short-url');
                     shortUrlElement.textContent = data.short_url;
                     shortUrlElement.href = data.short_url;
-                    document.getElementById('result').style.display = 'block';
+                    resultElement.style.display = 'block'; // Show the result
+                } else if (data.error) {
+                    alert('Error: ' + data.error);
                 } else {
-                    console.error('Error:', data);
+                    alert('An unknown error occurred. Please try again.');
                 }
             })
             .catch(error => {
+                loader.style.display = 'none'; // Hide loader in case of error
+                alert('Failed to shorten the URL. Please try again.');
                 console.error('Error:', error);
             });
         });
     </script>
-
 </body>
 </html>
